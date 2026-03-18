@@ -18,6 +18,9 @@ from models.user import User
 from models.category import Category
 from models.service import Service
 from models.review import Review
+from models.role import Role
+from models.permission import Permission
+from models.role_permission import RolePermission
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -6,7 +6,7 @@ from models.service import Service
 from models.category import Category
 from models.user import User
 from schemas.service import ServiceCreate, ServiceUpdate, ServiceResponse
-from routers.auth import get_current_user
+from routers.auth import get_current_user, require_permission
 
 router = APIRouter(prefix="/services", tags=["Services"])
 
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/services", tags=["Services"])
 def create_service(
     service_data: ServiceCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permission("create_service"))
 ):
     category = db.query(Category).filter(Category.id == service_data.category_id).first()
     if not category:
@@ -51,15 +51,15 @@ def update_service(
     service_id: int,
     updated_service: ServiceUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permission("update_service"))
 ):
     service = db.query(Service).filter(Service.id == service_id).first()
 
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    if service.provider_id != current_user.id:
-        raise HTTPException(status_code=403, detail="You can only update your own service")
+    if service.provider_id != current_user.id and current_user.role_name != "admin":
+        raise HTTPException(status_code=403, detail="You can only update your own service unless you are admin")
 
     category = db.query(Category).filter(Category.id == updated_service.category_id).first()
     if not category:
@@ -79,15 +79,15 @@ def update_service(
 def delete_service(
     service_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_permission("delete_service"))
 ):
     service = db.query(Service).filter(Service.id == service_id).first()
 
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    if service.provider_id != current_user.id:
-        raise HTTPException(status_code=403, detail="You can only delete your own service")
+    if service.provider_id != current_user.id and current_user.role_name != "admin":
+        raise HTTPException(status_code=403, detail="You can only delete your own service unless you are admin")
 
     db.delete(service)
     db.commit()

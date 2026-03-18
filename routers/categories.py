@@ -4,12 +4,18 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from models.category import Category
 from schemas.category import CategoryCreate, CategoryResponse
-
+from models.user import User
+from routers.auth import require_permission
+from models.user import User
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
 
 @router.post("/", response_model=CategoryResponse)
-def create_category(category_data: CategoryCreate, db: Session = Depends(get_db)):
+def create_category(
+    category_data: CategoryCreate,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_permission("manage_categories"))
+):
     existing = db.query(Category).filter(Category.name == category_data.name).first()
     if existing:
         raise HTTPException(status_code=400, detail="Category already exists")
